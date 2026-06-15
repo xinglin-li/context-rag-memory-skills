@@ -13,24 +13,9 @@ class FakeEmbeddingProvider(BaseEmbeddingProvider):
     def __init__(self, dimensions: int = 4):
         self.dimensions = dimensions
 
-    def get_embedding(self, text: str) -> List[float]:
-        """
-        确定性伪 Embedding 生成算法：
-        利用 MD5 哈希将输入文本转化为绝对可重复、可预测的伪固定维数向量，彻底摆脱网络和概率干扰。
-        """
-        if not text:
-            return [0.0] * self.dimensions
-            
-        # 针对特定量化测试词汇进行语义“硬编码”，以便在测试中完美验证几何距离
-        normalized = text.lower()
-        if "arima" in normalized or "time series" in normalized:
-            return [0.9, 0.1, 0.0, 0.0]  # 假设前两个维度代表时序特征
-        if "backtest" in normalized or "trading" in normalized:
-            return [0.0, 0.0, 0.8, 0.2]  # 假设后两个维度代表回测特征
-            
-class FakeEmbeddingProvider(BaseEmbeddingProvider):
-    def __init__(self, dimensions: int = 4):
-        self.dimensions = dimensions
+    @staticmethod
+    def _contains_any(text: str, keywords: List[str]) -> bool:
+        return any(keyword in text for keyword in keywords)
 
     def get_embedding(self, text: str) -> List[float]:
         """
@@ -40,11 +25,21 @@ class FakeEmbeddingProvider(BaseEmbeddingProvider):
         if not text:
             return [0.0] * self.dimensions
             
-        # 针对特定量化测试词汇进行语义“硬编码”，以便在测试中完美验证几何距离
         normalized = text.lower()
-        if "arima" in normalized or "time series" in normalized:
+
+        # 针对测试中出现的领域语义做稳定映射，让“同义改写”仍落入相同语义簇。
+        time_series_keywords = [
+            "arima", "time series", "forecast", "forecasting", "historical",
+            "sequential", "stochastic", "series", "training",
+        ]
+        backtest_keywords = [
+            "backtest", "backtesting", "trading", "systematic", "quantitative",
+            "data leakage", "leakage",
+        ]
+
+        if self._contains_any(normalized, time_series_keywords):
             return [0.9, 0.1, 0.0, 0.0]  # 假设前两个维度代表时序特征
-        if "backtest" in normalized or "trading" in normalized:
+        if self._contains_any(normalized, backtest_keywords):
             return [0.0, 0.0, 0.8, 0.2]  # 假设后两个维度代表回测特征
             
         # 兜底：利用字符哈希生成稳定的伪随机向量

@@ -86,6 +86,19 @@ def test_description_keyword_can_activate_skill(skills_root):
     assert "Isolate stable seasonal variance patterns" in activated.full_instructions
 
 
+def test_fuzzy_intent_can_activate_without_skill_name(skills_root):
+    selector = SkillSelector(SkillLoader(str(skills_root)))
+
+    activated = selector.select_and_activate(
+        "Can you double check whether my chronological splits suffer from information leakage?"
+    )
+
+    assert activated is not None
+    assert activated.name == "rolling-backtest"
+    assert "Rolling Backtest Procedure" in activated.full_instructions
+    assert "Validate chronological splits" in activated.full_instructions
+
+
 def test_unmatched_query_does_not_activate_or_load_full_skill(skills_root):
     class SpyLoader(SkillLoader):
         def __init__(self, root):

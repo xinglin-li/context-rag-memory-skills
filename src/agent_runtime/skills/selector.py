@@ -13,10 +13,10 @@ class SkillSelector:
     def __init__(self, loader: SkillLoader):
         self.loader = loader
         self.catalog: List[SkillMetadata] = self.loader.discover_catalog()
-        self.skill_by_chunk_id: Dict[str, SkillMetadata] = {}
+        self.skill_by_name: Dict[str, SkillMetadata] = {meta.name: meta for meta in self.catalog}
 
-        self.bm25_retriever = BM25Retriever()
-        self.embedding_provider = FakeEmbeddingProvider()
+        self.bm25 = BM25Retriever()
+        self.embedding_provider = FakeEmbeddingProvider(dimensions=4)
         self.vector_index = VectorIndex(self.embedding_provider)
 
         self._build_skill_indices()
@@ -25,22 +25,23 @@ class SkillSelector:
         """Index lightweight skill metadata, never full SKILL.md bodies."""
         chunks = []
         for meta in self.catalog:
-            chunk_id = f"skill_{meta.name}"
-            text = f"Skill Name: {meta.name}. Description: {meta.description}"
+            chunk_id = f"skill_chunk_{meta.name}"
+            allowed_tools = " ".join(meta.allowed_tools)
+            text = f"Skill: {meta.name}. Description: {meta.description}. Keywords: {allowed_tools}"
             chunks.append(
                 Chunk(
                     chunk_id=chunk_id,
-                    document_id=meta.name,
+                    document_id=f"doc_skill_{meta.name}",
                     text=text,
-                    metadata={"skill_meta": meta},
+                    metadata={"skill_name": meta.name, "meta_ref": meta},
+                    trust_level="application_trusted",
                 )
             )
-            self.skill_by_chunk_id[chunk_id] = meta
 
         if not chunks:
             return
 
-        self.bm25_retriever.fit(chunks)
+        self.bm25.fit(chunks)
         self.vector_index.add_chunks(chunks)
 
     def select_and_activate(self, query: str) -> Optional[ActivatedSkill]:
@@ -58,26 +59,25 @@ class SkillSelector:
             if meta.name.lower() in lowered_query:
                 return self.loader.load_full_skill(meta)
 
-        bm25_results = self.bm25_retriever.search(query, top_k=2)
-        if not bm25_results:
+        bm25_hits = self.bm25.search(query, top_k=2)
+        if not bm25_hits:
             return None
 
-        vector_results = self.vector_index.search(query, top_k=2)
-        score_map: Dict[str, float] = {}
+        vector_hits = self.vector_index.search(query, top_k=2)
+        rrf_scores: Dict[str, float] = {}
+        k_constant = 60
 
-        for rank, hit in enumerate(bm25_results):
-            score_map[hit.chunk_id] = score_map.get(hit.chunk_id, 0.0) + 1.0 / (60 + rank)
+        for rank, hit in enumerate(bm25_hits, start=1):
+            skill_name = hit.chunk_id.replace("skill_chunk_", "", 1)
+            rrf_scores[skill_name] = rrf_scores.get(skill_name, 0.0) + 1.0 / (k_constant + rank)
 
-        for rank, hit in enumerate(vector_results):
-            chunk_id = hit["chunk_id"]
-            score_map[chunk_id] = score_map.get(chunk_id, 0.0) + 1.0 / (60 + rank)
+        for rank, hit in enumerate(vector_hits, start=1):
+            skill_name = hit["chunk_id"].replace("skill_chunk_", "", 1)
+            rrf_scores[skill_name] = rrf_scores.get(skill_name, 0.0) + 1.0 / (k_constant + rank)
 
-        best_chunk_id = max(score_map, key=score_map.get)
-        meta = self.skill_by_chunk_id.get(best_chunk_id)
+        best_skill_name = max(rrf_scores, key=rrf_scores.get)
+        meta = self.skill_by_name.get(best_skill_name)
         if meta is None:
             return None
 
         return self.loader.load_full_skill(meta)
-
-
-SemanticSkillSelector = SkillSelector

@@ -1,7 +1,7 @@
 # tests/test_skill_loader.py
 import pytest
 from agent_runtime.skills.loader import SkillLoader
-from agent_runtime.skills.selector import SemanticSkillSelector, SkillSelector
+from agent_runtime.skills.selector import SkillSelector
 
 def test_discovery_stage_only_metadata():
     """测试情况 1: 扫描发现阶段验证。全库扫描只能读取轻量简介，内存不能包含大段SOP正文"""
@@ -39,7 +39,7 @@ def test_semantic_skill_fallback_and_activation():
     验证语义选择器能否通过双路召回成功将其激活并解冻。
     """
     loader = SkillLoader("skills")
-    selector = SemanticSkillSelector(loader)
+    selector = SkillSelector(loader)
     
     # 故意避开技能名称，使用近义词和描述中的深层概念
     fuzzy_query = "Can you check my chronological simulation rows to ensure there is no future information leakage?"
@@ -55,7 +55,7 @@ def test_semantic_skill_fallback_and_activation():
 def test_semantic_skill_seasonal_diagnostics():
     """验证另一个技能卡的语义泛化"""
     loader = SkillLoader("skills")
-    selector = SemanticSkillSelector(loader)
+    selector = SkillSelector(loader)
     
     fuzzy_query = "Please analyze the repetitive variance and components in our high-frequency series."
     

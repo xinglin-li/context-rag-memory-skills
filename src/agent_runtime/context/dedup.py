@@ -1,6 +1,8 @@
 # src/agent_runtime/context/dedup.py
 from typing import List
+
 from agent_runtime.context.models import ContextItem
+
 
 class ContextDeduplicator:
     @staticmethod
@@ -8,7 +10,6 @@ class ContextDeduplicator:
         seen_content = set()
         unique_items = []
         for item in items:
-            # 清理两端空格后做唯一性校验
             normalized_content = item.content.strip()
             if normalized_content not in seen_content:
                 seen_content.add(normalized_content)

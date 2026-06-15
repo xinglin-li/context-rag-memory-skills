@@ -1,8 +1,8 @@
 # context-rag-memory-skills
 
-A framework-free, test-driven Agent Runtime that extends the Week 1 `agent-runtime-lab` with context assembly, hybrid retrieval, long-term memory, and progressive skill activation.
+A framework-free, test-driven Agent Runtime with context assembly, hybrid retrieval, long-term memory, and progressive skill activation.
 
-This repository keeps the core premise of Week 1: the model can propose text or tool calls, but deterministic runtime code owns state transitions, validation, side effects, trace events, and safety boundaries. Week 2 adds the context layer around that control loop.
+This repository builds on the earlier [agent-runtime-lab](https://github.com/xinglin-li/agent-runtime-lab) runtime. It keeps the same core premise: the model can propose text or tool calls, but deterministic runtime code owns state transitions, validation, side effects, trace events, and safety boundaries.
 
 ## Project Status
 
@@ -22,9 +22,9 @@ It is designed to make agent mechanics visible and testable:
 
 Requires Python 3.11+. Tested locally with Python 3.12.
 
-## What Changed From Week 1
+## What Changed From The Previous Version
 
-Week 1 focused on the runtime core:
+The previous version focused on the runtime core:
 
 - provider adapter boundary
 - tool registry allowlist
@@ -34,7 +34,7 @@ Week 1 focused on the runtime core:
 - subprocess allowlist
 - FastAPI run lifecycle
 
-Week 2 keeps those pieces and adds:
+This version keeps those pieces and adds:
 
 - `ContextAssembler` for priority-based context retention and dropping
 - `ContextItem` trust levels such as `system_trusted`, `user_supplied`, `retrieved_untrusted`, and `application_trusted`
@@ -195,7 +195,7 @@ Expected result at the time of writing:
 47 passed
 ```
 
-Run focused Week 2 tests:
+Run focused context, retrieval, memory, and skills tests:
 
 ```bash
 pytest tests/test_context_integration.py tests/test_skill_loader.py tests/test_skill_activation.py -v

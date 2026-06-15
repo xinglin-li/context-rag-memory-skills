@@ -2,8 +2,8 @@ MIT License
 
 Copyright (c) 2026 Xinglin Li
 
-This license applies to context-rag-memory-skills, the Week 2
-context/RAG/memory/skills upgrade of agent-runtime-lab.
+This license applies to context-rag-memory-skills, a context, retrieval,
+memory, and skills runtime built on the agent-runtime-lab lineage.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

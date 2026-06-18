@@ -99,5 +99,39 @@ class SQLiteMemoryStore:
             for r in rows
         ]
 
+    def list_episodes_by_namespace(self, namespace: str, limit: int = 10) -> List[MemoryRecord]:
+        """Return recent episodic memories for a namespace, ordered by recency."""
+        cursor = self.conn.cursor()
+        cursor.execute(
+            """SELECT memory_id, namespace, key, memory_type, content, importance, updated_at, metadata
+               FROM memories
+               WHERE namespace = ? AND memory_type = 'episodic'
+               ORDER BY updated_at DESC
+               LIMIT ?""",
+            (namespace, limit),
+        )
+        rows = cursor.fetchall()
+        return [
+            MemoryRecord(
+                memory_id=r[0],
+                namespace=r[1],
+                key=r[2],
+                memory_type=r[3],
+                content=r[4],
+                importance=r[5],
+                updated_at=r[6],
+                metadata=json.loads(r[7]),
+            )
+            for r in rows
+        ]
+
+    def put_episode(self, record: MemoryRecord) -> None:
+        """Persist an episodic memory record (convenience wrapper)."""
+        if record.memory_type != "episodic":
+            raise ValueError(
+                f"put_episode requires memory_type='episodic', got '{record.memory_type}'"
+            )
+        self.put_memory(record)
+
     def close(self):
         self.conn.close()

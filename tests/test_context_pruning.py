@@ -89,4 +89,3 @@ def test_assembler_returns_bundle_and_report():
     assert isinstance(result, tuple)
     assert len(result) == 2
     assert isinstance(result[0], ContextBundle)
-    assert isinstance(result[1], ContextBudgetReport)

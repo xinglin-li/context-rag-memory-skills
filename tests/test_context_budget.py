@@ -10,10 +10,13 @@ def test_context_within_budget():
         ContextItem(item_id="2", kind="user_message", content="Help me buy a stock.", priority=95, trust_level="user_supplied"),
     ]
     assembler = ContextAssembler(max_tokens=1000)
-    bundle = assembler.assemble(items)
+    bundle, report = assembler.assemble(items)
 
     assert len(bundle.items) == 2
     assert len(bundle.dropped_items) == 0
+    # V2: budget report should be produced
+    assert report.items_retained == 2
+    assert report.utilization_ratio < 1.0
 
 
 def test_context_over_budget_truncation():
@@ -25,7 +28,7 @@ def test_context_over_budget_truncation():
     ]
 
     assembler = ContextAssembler(max_tokens=30)
-    bundle = assembler.assemble(items)
+    bundle, report = assembler.assemble(items)
 
     retained_ids = [item.item_id for item in bundle.items]
     assert "sys" in retained_ids
@@ -33,6 +36,8 @@ def test_context_over_budget_truncation():
 
     dropped_ids = [item.item_id for item in bundle.dropped_items]
     assert "rag_junk" in dropped_ids
+    # V2: budget report
+    assert report.items_dropped_by_budget == 1
 
 
 def test_system_instruction_is_undroppable():
@@ -43,7 +48,9 @@ def test_system_instruction_is_undroppable():
     ]
 
     assembler = ContextAssembler(max_tokens=10)
-    bundle = assembler.assemble(items)
+    bundle, report = assembler.assemble(items)
 
     assert "sys_heavy" in [item.item_id for item in bundle.items]
     assert "low_rag" in [item.item_id for item in bundle.dropped_items]
+    # V2: system instructions survive with priority >= 100
+    assert report.items_retained >= 1

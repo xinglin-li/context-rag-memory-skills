@@ -279,10 +279,17 @@ class AgentRuntime:
                     )
                 )
 
-            bundle = self.context_assembler.assemble(dynamic_items)
+            bundle, budget_report = self.context_assembler.assemble(dynamic_items)
             recorder.record(run_id, "model_requested", state.step_count, {
                 "budget_tokens": bundle.total_estimated_tokens,
+                "items_dropped": budget_report.items_dropped_by_budget,
+                "items_pruned": budget_report.items_pruned,
+                "utilization_ratio": budget_report.utilization_ratio,
             })
+            if budget_report.lost_in_middle_warning:
+                recorder.record(run_id, "context_lost_in_middle_warning", state.step_count, {
+                    "utilization": budget_report.utilization_ratio,
+                })
 
             # -- ask provider --
             try:
